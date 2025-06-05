@@ -1,0 +1,29 @@
+name: X-Bedrock
+version: '${project.version}'
+main: com.xbedrock.XBedrockPlugin
+api-version: '1.21'
+depend: [Geyser-Spigot]
+authors: [YourName]
+description: A plugin that allows Bedrock clients to connect to Java servers via BungeeCord
+website: https://github.com/yourusername/X-Bedrock
+
+commands:
+  xbedrock:
+    description: Main command for X-Bedrock plugin
+    usage: /xbedrock <toggle|prefix|webstore|roblox> [args]
+    permission: xbedrock.admin
+    aliases: [xb]
+
+permissions:
+  xbedrock.admin:
+    description: Allows access to all X-Bedrock admin commands
+    default: op
+  xbedrock.cosmetics:
+    description: Allows access to cosmetics features
+    default: true
+  xbedrock.webstore:
+    description: Allows access to webstore features
+    default: true
+  xbedrock.roblox:
+    description: Allows access to Roblox integration features
+    default: true 

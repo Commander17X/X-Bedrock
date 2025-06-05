@@ -1,0 +1,181 @@
+# X-Bedrock Configuration
+
+# Server settings
+server:
+  # The port that Bedrock players will connect to
+  port: 19132
+  # The IP address to bind to (leave empty for all interfaces)
+  address: ""
+  # Maximum number of players that can connect
+  max-players: 20
+  # Whether to enable server list ping
+  enable-ping: true
+  # Whether to show server in friends list
+  show-in-friends: true
+
+# Authentication settings
+auth:
+  # Whether to use authentication (true) or offline mode (false)
+  online-mode: true
+  # Whether to allow Bedrock players to connect
+  allow-bedrock: true
+  # Whether to allow Java players to connect
+  allow-java: true
+  # Maximum number of connection attempts before rate limiting
+  max-connection-attempts: 3
+  # Rate limit duration in seconds
+  rate-limit-duration: 300
+
+# Connection settings
+connection:
+  # Whether to enable connection timeout
+  enable-timeout: true
+  # Connection timeout in seconds
+  timeout: 30
+  # Whether to validate IP addresses
+  validate-ip: true
+  # Whether to enable connection logging
+  enable-logging: true
+  # Whether to enable command menu preloading
+  preload-commands: true
+
+# Message settings
+messages:
+  # Enable RGB color codes in messages
+  enable-rgb: true
+  # Enable gradients in messages
+  enable-gradients: true
+  # Default message format
+  format: "<prefix><player> <message>"
+  # Custom messages
+  custom:
+    welcome: "<gradient:#00ff00:#0000ff>Welcome to the server!</gradient>"
+    connecting: "<gray>Connecting to Java server...</gray>"
+    connected: "<green>Successfully connected to the server!"
+    disconnected: "<red>Disconnected from the server."
+    invalid_ip: "<red>Invalid IP address! Please check your connection settings."
+    too_many_attempts: "<red>Too many connection attempts. Please try again later."
+    command_help: "<yellow>Type /help for available commands"
+    server_full: "<red>The server is full!"
+    maintenance: "<red>The server is currently under maintenance."
+    version_mismatch: "<red>Your client version is not supported."
+    auth_failed: "<red>Authentication failed. Please try again."
+    rate_limited: "<red>You are being rate limited. Please wait before trying again."
+
+# Translation settings
+translation:
+  # Whether to translate chat messages
+  chat: true
+  # Whether to translate commands
+  commands: true
+  # Whether to translate inventory items
+  inventory: true
+  # Whether to translate entity names
+  entities: true
+
+# PvP settings
+pvp:
+  # Default PvP mode (1.8 or modern)
+  default-mode: "modern"
+  # Whether to allow PvP between Bedrock and Java players
+  cross-platform: true
+  # 1.8 PvP settings
+  legacy:
+    # Sprint multiplier for 1.8 PvP
+    sprint-multiplier: 1.5
+    # Whether to enable block hitting
+    block-hitting: true
+    # Whether to enable rod combos
+    rod-combos: true
+  # Modern PvP settings
+  modern:
+    # Sprint multiplier for modern PvP
+    sprint-multiplier: 1.3
+    # Whether to enable shield blocking
+    shield-blocking: true
+    # Whether to enable axe critical hits
+    axe-criticals: true
+
+# Resource pack settings
+resource-packs:
+  # Whether to automatically load resource packs on startup
+  auto-load: true
+  # Whether to require resource packs
+  required: false
+  # Maximum size of resource packs in MB
+  max-size: 100
+  # Whether to cache resource packs
+  cache: true
+  # Default resource pack to load
+  default-pack: ""
+
+# Performance settings
+performance:
+  # Maximum number of chunks to send per tick
+  max-chunks-per-tick: 4
+  # Whether to compress packets
+  compress-packets: true
+  # Whether to cache translations
+  cache-translations: true
+
+# Debug settings
+debug:
+  # Whether to enable debug logging
+  enabled: false
+  # Log level (INFO, DEBUG, TRACE)
+  level: INFO
+
+# Feature toggles
+features:
+  cosmetics:
+    enabled: true
+    # Additional cosmetics settings
+    auto-apply: true
+    save-on-quit: true
+
+  webstore:
+    enabled: true
+    # Webstore settings
+    prefix-format: "!-<{name}>"
+    auto-sync: true
+
+  roblox:
+    enabled: true
+    # Roblox integration settings
+    sync-interval: 1 # seconds
+    sync-position: true
+    sync-inventory: true
+    sync-health: true
+    sync-effects: true
+
+  browser:
+    enabled: false
+    # Browser integration settings
+    sync-interval: 1 # seconds
+    sync-position: true
+    sync-inventory: true
+    sync-health: true
+    sync-effects: true
+    sync-chat: true
+
+# API Configuration
+api:
+  roblox:
+    endpoint: "https://api.roblox.com"
+    key: "" # Your Roblox API key
+
+  webstore:
+    endpoint: "https://your-webstore.com/api"
+    key: "" # Your webstore API key
+
+  browser:
+    endpoint: "https://your-browser-api.com"
+    key: "" # Your browser API key
+
+# General Settings
+settings:
+  debug: false
+  log-level: "INFO"
+  auto-update: true
+  backup-data: true
+  backup-interval: 3600 # seconds 

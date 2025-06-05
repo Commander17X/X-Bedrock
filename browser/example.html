@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Bedrock Browser Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-container {
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .chat-input button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background-color: #45a049;
+        }
+
+        .status {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .status.connected {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .status.disconnected {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 8px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button-group button:hover {
+            background-color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>X-Bedrock Browser Example</h1>
+        
+        <div id="status" class="status disconnected">
+            Disconnected
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3>Connection</h3>
+                <div class="button-group">
+                    <button onclick="connect()">Connect</button>
+                    <button onclick="disconnect()">Disconnect</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Position</h3>
+                <div class="button-group">
+                    <button onclick="move('forward')">Forward</button>
+                    <button onclick="move('backward')">Backward</button>
+                </div>
+                <div class="button-group" style="margin-top: 10px;">
+                    <button onclick="move('left')">Left</button>
+                    <button onclick="move('right')">Right</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chat">
+            <!-- Chat messages will appear here -->
+        </div>
+
+        <div class="chat-input">
+            <input type="text" id="message" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="xbedrock.js"></script>
+    <script>
+        let xbedrock = null;
+        let position = { x: 0, y: 0, z: 0 };
+
+        // Initialize X-Bedrock
+        function init() {
+            xbedrock = new XBedrock({
+                serverUrl: 'ws://localhost:8080',
+                syncInterval: 1000,
+                features: {
+                    chat: true,
+                    inventory: true,
+                    cosmetics: true,
+                    webstore: true
+                }
+            });
+
+            // Set up event handlers
+            xbedrock.on('connect', () => {
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = 'Connected';
+            });
+
+            xbedrock.on('disconnect', () => {
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = 'Disconnected';
+            });
+
+            xbedrock.on('chat', (data) => {
+                const chat = document.getElementById('chat');
+                const message = document.createElement('div');
+                message.textContent = `${data.player}: ${data.message}`;
+                chat.appendChild(message);
+                chat.scrollTop = chat.scrollHeight;
+            });
+
+            xbedrock.on('error', (error) => {
+                console.error('X-Bedrock error:', error);
+            });
+        }
+
+        // Connect to server
+        function connect() {
+            if (!xbedrock) {
+                init();
+            }
+            xbedrock.connect();
+        }
+
+        // Disconnect from server
+        function disconnect() {
+            if (xbedrock) {
+                xbedrock.disconnect();
+            }
+        }
+
+        // Send chat message
+        function sendMessage() {
+            const input = document.getElementById('message');
+            const message = input.value.trim();
+            
+            if (message && xbedrock) {
+                xbedrock.sendChat(message);
+                input.value = '';
+            }
+        }
+
+        // Handle movement
+        function move(direction) {
+            if (!xbedrock) return;
+
+            const step = 1;
+            switch (direction) {
+                case 'forward':
+                    position.z -= step;
+                    break;
+                case 'backward':
+                    position.z += step;
+                    break;
+                case 'left':
+                    position.x -= step;
+                    break;
+                case 'right':
+                    position.x += step;
+                    break;
+            }
+
+            xbedrock.sendPosition(position);
+        }
+
+        // Handle Enter key in chat input
+        document.getElementById('message').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize on page load
+        window.onload = init;
+    </script>
+</body>
+</html> 

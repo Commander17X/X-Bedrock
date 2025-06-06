@@ -17,114 +17,160 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class ConnectionManager {
     private final XBedrockPlugin plugin;
     private final Map<UUID, ConnectionInfo> connectionInfoMap;
     private final Map<String, Integer> connectionAttempts;
+    private final Map<String, Long> lastConnectionTime;
     private final MiniMessage miniMessage;
     private static final int MAX_CONNECTION_ATTEMPTS = 3;
     private static final long CONNECTION_TIMEOUT = 30000; // 30 seconds
+    private static final long RATE_LIMIT_WINDOW = 60000; // 1 minute
+    private static final int MAX_CONNECTIONS_PER_WINDOW = 5;
 
     public ConnectionManager(XBedrockPlugin plugin) {
         this.plugin = plugin;
         this.connectionInfoMap = new ConcurrentHashMap<>();
         this.connectionAttempts = new HashMap<>();
+        this.lastConnectionTime = new HashMap<>();
         this.miniMessage = MiniMessage.miniMessage();
     }
 
     public void handleConnectionRequest(ConnectionRequestEvent event) {
-        GeyserConnection connection = event.connection();
-        String address = connection.remoteAddress();
-        InetAddress ipAddress = connection.remoteAddress().getAddress();
+        String address = event.getConnection().getSocketAddress().getAddress().getHostAddress();
 
-        // Check for connection attempts
+        // Check rate limiting
+        if (isRateLimited(address)) {
+            event.setCancelled(true);
+            event.getConnection().disconnect(plugin.getMessageManager().parseMessage("rate_limited"));
+            return;
+        }
+
+        // Check connection attempts
         int attempts = connectionAttempts.getOrDefault(address, 0);
         if (attempts >= MAX_CONNECTION_ATTEMPTS) {
             event.setCancelled(true);
-            sendMessage(connection, "<red>Too many connection attempts. Please try again later.");
+            event.getConnection().disconnect(plugin.getMessageManager().parseMessage("too_many_attempts"));
             return;
         }
 
-        // Validate IP address
-        if (!isValidIPAddress(ipAddress)) {
-            event.setCancelled(true);
-            sendMessage(connection, "<red>Invalid IP address! Please check your connection settings.");
-            return;
-        }
-
-        // Store connection info
-        ConnectionInfo info = new ConnectionInfo(System.currentTimeMillis());
-        connectionInfoMap.put(connection.bedrockUuid(), info);
+        // Update connection attempts
         connectionAttempts.put(address, attempts + 1);
+        lastConnectionTime.put(address, System.currentTimeMillis());
 
-        // Send welcome message
-        sendMessage(connection, "<gradient:#00ff00:#0000ff>Welcome to the server!</gradient>");
-        sendMessage(connection, "<gray>Connecting to Java server...</gray>");
+        // Create connection info
+        ConnectionInfo info = new ConnectionInfo(event.getConnection());
+        connectionInfoMap.put(event.getConnection().getAuthData().getUuid(), info);
+
+        // Start connection timeout
+        startConnectionTimeout(event.getConnection());
     }
 
     public void handleConnectionSuccess(ConnectionSuccessEvent event) {
-        GeyserConnection connection = event.connection();
-        String address = connection.remoteAddress();
+        UUID uuid = event.getConnection().getAuthData().getUuid();
+        ConnectionInfo info = connectionInfoMap.get(uuid);
 
-        // Clear connection attempts
-        connectionAttempts.remove(address);
+        if (info != null) {
+            info.setConnected(true);
+            info.setConnectionTime(System.currentTimeMillis());
 
-        // Send success message
-        sendMessage(connection, "<green>Successfully connected to the server!");
-        sendMessage(connection, "<yellow>Type /help for available commands");
+            // Reset connection attempts
+            String address = event.getConnection().getSocketAddress().getAddress().getHostAddress();
+            connectionAttempts.remove(address);
 
-        // Handle command menu freezing
-        scheduleCommandMenuLoad(connection);
+            // Send welcome message
+            event.getConnection().sendMessage(plugin.getMessageManager().parseMessage("welcome"));
+
+            // Initialize player data
+            plugin.getPlayerDataManager().initializePlayerData(event.getConnection());
+        }
     }
 
     public void handleConnectionClose(ConnectionCloseEvent event) {
-        GeyserConnection connection = event.connection();
-        connectionInfoMap.remove(connection.bedrockUuid());
-        connectionAttempts.remove(connection.remoteAddress());
-    }
+        UUID uuid = event.getConnection().getAuthData().getUuid();
+        ConnectionInfo info = connectionInfoMap.remove(uuid);
 
-    private void scheduleCommandMenuLoad(GeyserConnection connection) {
-        // Schedule command menu load after a short delay to prevent freezing
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (connection.isConnected()) {
-                // Pre-load command menu
-                connection.sendCommand("help");
-            }
-        }, 20L); // 1 second delay
-    }
+        if (info != null) {
+            // Save player data
+            plugin.getPlayerDataManager().savePlayerData(event.getConnection());
 
-    private boolean isValidIPAddress(InetAddress address) {
-        if (address == null)
-            return false;
-
-        // Check if it's a valid IPv4 or IPv6 address
-        String hostAddress = address.getHostAddress();
-        return hostAddress.matches("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$") || // IPv4
-                hostAddress.matches("^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$"); // IPv6
-    }
-
-    public void sendMessage(GeyserConnection connection, String message) {
-        Component component = miniMessage.deserialize(message);
-        connection.sendMessage(component);
-    }
-
-    public void broadcastMessage(String message) {
-        Component component = miniMessage.deserialize(message);
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            player.sendMessage(component);
+            // Clean up resources
+            info.cleanup();
         }
     }
 
-    private static class ConnectionInfo {
-        private final long connectionTime;
+    private boolean isRateLimited(String address) {
+        long currentTime = System.currentTimeMillis();
+        long lastTime = lastConnectionTime.getOrDefault(address, 0L);
 
-        public ConnectionInfo(long connectionTime) {
+        if (currentTime - lastTime > RATE_LIMIT_WINDOW) {
+            lastConnectionTime.remove(address);
+            return false;
+        }
+
+        return connectionAttempts.getOrDefault(address, 0) >= MAX_CONNECTIONS_PER_WINDOW;
+    }
+
+    private void startConnectionTimeout(GeyserConnection connection) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            ConnectionInfo info = connectionInfoMap.get(connection.getAuthData().getUuid());
+            if (info != null && !info.isConnected()) {
+                connection.disconnect(plugin.getMessageManager().parseMessage("connection_timeout"));
+                connectionInfoMap.remove(connection.getAuthData().getUuid());
+            }
+        }, TimeUnit.MILLISECONDS.toSeconds(CONNECTION_TIMEOUT) * 20L);
+    }
+
+    public static class ConnectionInfo {
+        private final GeyserConnection connection;
+        private boolean connected;
+        private long connectionTime;
+        private String clientVersion;
+        private String deviceModel;
+        private String deviceOS;
+
+        public ConnectionInfo(GeyserConnection connection) {
+            this.connection = connection;
+            this.connected = false;
+            this.connectionTime = 0;
+            this.clientVersion = connection.getClientVersion();
+            this.deviceModel = connection.getDeviceModel();
+            this.deviceOS = connection.getDeviceOS();
+        }
+
+        public void cleanup() {
+            // Clean up any resources
+        }
+
+        // Getters and setters
+        public boolean isConnected() {
+            return connected;
+        }
+
+        public void setConnected(boolean connected) {
+            this.connected = connected;
+        }
+
+        public long getConnectionTime() {
+            return connectionTime;
+        }
+
+        public void setConnectionTime(long connectionTime) {
             this.connectionTime = connectionTime;
         }
 
-        public boolean isTimedOut() {
-            return System.currentTimeMillis() - connectionTime > CONNECTION_TIMEOUT;
+        public String getClientVersion() {
+            return clientVersion;
+        }
+
+        public String getDeviceModel() {
+            return deviceModel;
+        }
+
+        public String getDeviceOS() {
+            return deviceOS;
         }
     }
 }

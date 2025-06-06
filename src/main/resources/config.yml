@@ -162,11 +162,12 @@ features:
 api:
   roblox:
     endpoint: "https://api.roblox.com"
-    key: "" # Your Roblox API key
+    key: "your-key"
 
   webstore:
     endpoint: "https://your-webstore.com/api"
-    key: "" # Your webstore API key
+    key: "your-key"
+    webhook-secret: "your-webhook-secret"
 
   browser:
     endpoint: "https://your-browser-api.com"
@@ -178,4 +179,48 @@ settings:
   log-level: "INFO"
   auto-update: true
   backup-data: true
-  backup-interval: 3600 # seconds 
+  backup-interval: 3600 # seconds
+
+# Security Configuration
+security:
+  logging:
+    enabled: false
+    file: "logs/packets.log"
+    level: "INFO"
+    packet-types:
+      - "CustomPayload"
+      - "BlockPlace"
+      - "BlockDig"
+      - "UseItem"
+
+# Advanced Settings
+advanced:
+  debug: false
+  verbose-logging: false
+
+# Connection Gate Configuration
+connection-gate:
+  # Maximum number of connections allowed per second
+  max-connections-per-second: 20
+  
+  # Maximum size of the connection queue
+  max-queue-size: 100
+  
+  # Maximum number of connections allowed per IP address
+  max-connections-per-ip: 3
+  
+  # Interval (in ticks) at which the queue is processed
+  queue-process-interval: 20
+  
+  # Multiplier for connection limits during peak hours
+  peak-hour-multiplier: 2
+  
+  # Hours considered as peak hours (24-hour format)
+  peak-hours:
+    - 16  # 4 PM
+    - 17  # 5 PM
+    - 18  # 6 PM
+    - 19  # 7 PM
+    - 20  # 8 PM
+    - 21  # 9 PM
+    - 22  # 10 PM 

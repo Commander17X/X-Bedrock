@@ -1,0 +1,74 @@
+# X-Bedrock Security Configuration
+
+# Packet Settings
+packet:
+  # Maximum packets per second per player
+  max-per-second: 100
+  # Maximum packet size in bytes (2MB default)
+  max-size: 2097152
+  # Time window for packet rate checking in milliseconds
+  time-window: 1000
+  # Number of violations before action is taken
+  violation-threshold: 5
+
+# Netty Protection
+netty:
+  # Enable Netty crasher protection
+  enabled: true
+  # Maximum payload size for custom packets
+  max-payload-size: 1000
+  # Blocked packet types
+  blocked-packets:
+    - "CustomPayload"
+    - "TabComplete"
+    - "WindowClick"
+
+# Printer/Schematica Detection
+printer:
+  # Enable printer mode detection
+  enabled: true
+  # Packet threshold for printer mode detection
+  packet-threshold: 50
+  # Action to take when printer mode is detected (kick/warn/none)
+  action: "warn"
+
+# Packet Logging
+logging:
+  # Enable packet logging
+  enabled: false
+  # Log file path
+  file: "logs/packets.log"
+  # Log level (INFO/DEBUG)
+  level: "INFO"
+  # Log specific packet types
+  packet-types:
+    - "CustomPayload"
+    - "BlockPlace"
+    - "BlockDig"
+    - "UseItem"
+
+# Violation Actions
+violations:
+  # Actions for different violation types
+  netty-crasher:
+    action: "kick"
+    message: "§cSecurity violation: Netty crasher detected"
+  packet-rate:
+    action: "kick"
+    message: "§cSecurity violation: Packet rate exceeded"
+  printer-mode:
+    action: "warn"
+    message: "§cWarning: Printer mode detected"
+
+# Advanced Settings
+advanced:
+  # Enable reflection-based packet inspection
+  reflection-inspection: true
+  # Enable packet size validation
+  size-validation: true
+  # Enable packet rate limiting
+  rate-limiting: true
+  # Enable printer mode detection
+  printer-detection: true
+  # Enable packet logging
+  packet-logging: false 

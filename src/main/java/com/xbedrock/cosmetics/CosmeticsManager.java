@@ -4,24 +4,30 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.geysermc.geyser.api.GeyserApi;
 import org.geysermc.geyser.api.connection.GeyserConnection;
 import org.geysermc.geyser.api.event.connection.ConnectionSuccessEvent;
 import com.xbedrock.XBedrockPlugin;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class CosmeticsManager implements Listener {
     private final XBedrockPlugin plugin;
+    private final Set<UUID> enabledPlayers;
+    private boolean enabled;
     private final Map<UUID, CosmeticData> playerCosmetics;
     private final File cosmeticsFolder;
     private final Map<String, CosmeticType> registeredCosmetics;
 
     public CosmeticsManager(XBedrockPlugin plugin) {
         this.plugin = plugin;
+        this.enabledPlayers = new HashSet<>();
+        this.enabled = plugin.getConfigManager().getConfig().getBoolean("features.cosmetics.enabled", true);
         this.playerCosmetics = new HashMap<>();
         this.cosmeticsFolder = new File(plugin.getDataFolder(), "cosmetics");
         this.registeredCosmetics = new HashMap<>();
@@ -31,6 +37,9 @@ public class CosmeticsManager implements Listener {
         }
 
         registerDefaultCosmetics();
+
+        // Register events
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     private void registerDefaultCosmetics() {
@@ -47,37 +56,18 @@ public class CosmeticsManager implements Listener {
         plugin.getLogger().info("Registered cosmetic type: " + type.getName());
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        if (isBedrockPlayer(player)) {
-            // Load cosmetics for Bedrock player
-            loadPlayerCosmetics(player);
-        }
+    public void enableCosmetics(Player player) {
+        if (!enabled)
+            return;
+        enabledPlayers.add(player.getUniqueId());
+        // Apply cosmetics to player
+        applyCosmetics(player);
     }
 
-    @EventHandler
-    public void onConnectionSuccess(ConnectionSuccessEvent event) {
-        GeyserConnection connection = event.connection();
-        Player player = plugin.getServer().getPlayer(connection.bedrockUuid());
-        if (player != null) {
-            // Apply cosmetics to Bedrock player
-            applyCosmetics(player);
-        }
-    }
-
-    private void loadPlayerCosmetics(Player player) {
-        // Load cosmetics from data file
-        File playerFile = new File(cosmeticsFolder, player.getUniqueId().toString() + ".yml");
-        if (playerFile.exists()) {
-            CosmeticData data = loadCosmeticData(playerFile);
-            playerCosmetics.put(player.getUniqueId(), data);
-        } else {
-            // Create default cosmetic data
-            CosmeticData data = new CosmeticData(player.getUniqueId());
-            playerCosmetics.put(player.getUniqueId(), data);
-            saveCosmeticData(data);
-        }
+    public void disableCosmetics(Player player) {
+        enabledPlayers.remove(player.getUniqueId());
+        // Remove cosmetics from player
+        removeCosmetics(player);
     }
 
     private void applyCosmetics(Player player) {
@@ -90,6 +80,35 @@ public class CosmeticsManager implements Listener {
                 applyCosmetic(player, typeId, cosmeticId);
             }
         }
+    }
+
+    private void removeCosmetics(Player player) {
+        // Remove all active cosmetics
+        player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+
+        // Remove armor stands used for cosmetics
+        player.getWorld().getEntities().stream()
+                .filter(entity -> entity.getType().name().equals("ARMOR_STAND"))
+                .filter(entity -> entity.getCustomName() != null
+                        && entity.getCustomName().startsWith("cosmetic_" + player.getUniqueId()))
+                .forEach(entity -> entity.remove());
+
+        // Remove particles
+        player.getWorld().getPlayers().forEach(p -> {
+            if (p.canSee(player)) {
+                p.spigot().stopParticles(player);
+            }
+        });
+
+        // Remove custom player data
+        PlayerData data = plugin.getPlayerDataManager().getPlayerData(player);
+        if (data != null) {
+            data.setCosmeticsEnabled(false);
+            plugin.getPlayerDataManager().savePlayerData(data);
+        }
+
+        // Notify player
+        player.sendMessage("§aAll cosmetics have been removed.");
     }
 
     private void applyCosmetic(Player player, String typeId, String cosmeticId) {
@@ -110,22 +129,32 @@ public class CosmeticsManager implements Listener {
         }
     }
 
-    private boolean isBedrockPlayer(Player player) {
-        GeyserConnection connection = GeyserApi.api().connectionByUuid(player.getUniqueId());
-        return connection != null;
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (enabledPlayers.contains(player.getUniqueId())) {
+            applyCosmetics(player);
+        }
     }
 
-    private CosmeticData loadCosmeticData(File file) {
-        // Load cosmetic data from file
-        // This is a placeholder for the actual loading logic
-        return new CosmeticData(UUID.fromString(file.getName().replace(".yml", "")));
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        if (enabledPlayers.contains(player.getUniqueId())) {
+            removeCosmetics(player);
+        }
     }
 
-    private void saveCosmeticData(CosmeticData data) {
-        // Save cosmetic data to file
-        // This is a placeholder for the actual saving logic
-        File file = new File(cosmeticsFolder, data.getPlayerId().toString() + ".yml");
-        // Save data to file
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        if (!enabled) {
+            // Disable cosmetics for all players
+            plugin.getServer().getOnlinePlayers().forEach(this::disableCosmetics);
+        }
     }
 
     public static class CosmeticType {

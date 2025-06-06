@@ -92,11 +92,15 @@ public class ConfigManager {
     }
 
     public String getApiEndpoint(String service) {
-        return apiEndpoints.getOrDefault(service, "");
+        return getConfig().getString("api." + service + ".endpoint", "");
     }
 
     public String getApiKey(String service) {
-        return apiKeys.getOrDefault(service, "");
+        return getConfig().getString("api." + service + ".key", "");
+    }
+
+    public String getWebhookSecret(String service) {
+        return getConfig().getString("api." + service + ".webhook-secret", "");
     }
 
     public void setApiEndpoint(String service, String endpoint) {
@@ -111,5 +115,9 @@ public class ConfigManager {
 
     public void reload() {
         loadConfig();
+    }
+
+    public boolean isPacketLoggingEnabled() {
+        return getConfig().getBoolean("security.logging.enabled", false);
     }
 }

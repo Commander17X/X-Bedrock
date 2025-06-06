@@ -4,66 +4,41 @@ import org.bukkit.entity.Player;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class PlayerData {
-    private final Player player;
-    private boolean isBedrockPlayer;
-    private String webstoreId;
-    private long lastLogin;
+    private final UUID uuid;
     private final Map<String, Long> purchases;
-    private final Map<String, String> cosmetics;
-    private String robloxUsername;
-    private String robloxId;
-    private String browserUsername;
-    private String browserSessionId;
+    private String prefix;
+    private boolean cosmeticsEnabled;
+    private final Map<String, Object> customData;
 
     public PlayerData(Player player) {
-        this.player = player;
-        this.isBedrockPlayer = false;
-        this.webstoreId = "";
-        this.lastLogin = System.currentTimeMillis();
+        this.uuid = player.getUniqueId();
         this.purchases = new HashMap<>();
-        this.cosmetics = new HashMap<>();
-        this.robloxUsername = "";
-        this.robloxId = "";
-        this.browserUsername = "";
-        this.browserSessionId = "";
+        this.prefix = "";
+        this.cosmeticsEnabled = true;
+        this.customData = new HashMap<>();
     }
 
-    public Player getPlayer() {
-        return player;
+    public PlayerData(UUID uuid) {
+        this.uuid = uuid;
+        this.purchases = new HashMap<>();
+        this.prefix = "";
+        this.cosmeticsEnabled = true;
+        this.customData = new HashMap<>();
     }
 
-    public boolean isBedrockPlayer() {
-        return isBedrockPlayer;
-    }
-
-    public void setBedrockPlayer(boolean bedrockPlayer) {
-        isBedrockPlayer = bedrockPlayer;
-    }
-
-    public String getWebstoreId() {
-        return webstoreId;
-    }
-
-    public void setWebstoreId(String webstoreId) {
-        this.webstoreId = webstoreId;
-    }
-
-    public long getLastLogin() {
-        return lastLogin;
-    }
-
-    public void setLastLogin(long lastLogin) {
-        this.lastLogin = lastLogin;
+    public UUID getUuid() {
+        return uuid;
     }
 
     public Map<String, Long> getPurchases() {
         return purchases;
     }
 
-    public void addPurchase(String itemId, long purchaseTime) {
-        purchases.put(itemId, purchaseTime);
+    public void addPurchase(String itemId) {
+        purchases.put(itemId, System.currentTimeMillis());
     }
 
     public void removePurchase(String itemId) {
@@ -74,66 +49,64 @@ public class PlayerData {
         return purchases.containsKey(itemId);
     }
 
-    public Map<String, String> getCosmetics() {
-        return cosmetics;
+    public String getPrefix() {
+        return prefix;
     }
 
-    public void setCosmetic(String type, String cosmeticId) {
-        cosmetics.put(type, cosmeticId);
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
     }
 
-    public void removeCosmetic(String type) {
-        cosmetics.remove(type);
+    public boolean isCosmeticsEnabled() {
+        return cosmeticsEnabled;
     }
 
-    public String getCosmetic(String type) {
-        return cosmetics.get(type);
+    public void setCosmeticsEnabled(boolean enabled) {
+        this.cosmeticsEnabled = enabled;
     }
 
-    public String getRobloxUsername() {
-        return robloxUsername;
+    public Object getCustomValue(String key) {
+        return customData.get(key);
     }
 
-    public void setRobloxUsername(String robloxUsername) {
-        this.robloxUsername = robloxUsername;
+    public void setCustomValue(String key, Object value) {
+        customData.put(key, value);
     }
 
-    public String getRobloxId() {
-        return robloxId;
+    public void removeCustomValue(String key) {
+        customData.remove(key);
     }
 
-    public void setRobloxId(String robloxId) {
-        this.robloxId = robloxId;
+    public Map<String, Object> getCustomData() {
+        return customData;
     }
 
-    public String getBrowserUsername() {
-        return browserUsername;
+    // Bedrock-specific getters
+    public String getBedrockUsername() {
+        return (String) customData.getOrDefault("bedrock_username", "");
     }
 
-    public void setBrowserUsername(String browserUsername) {
-        this.browserUsername = browserUsername;
+    public String getDeviceId() {
+        return (String) customData.getOrDefault("device_id", "");
     }
 
-    public String getBrowserSessionId() {
-        return browserSessionId;
+    public String getDeviceModel() {
+        return (String) customData.getOrDefault("device_model", "");
     }
 
-    public void setBrowserSessionId(String browserSessionId) {
-        this.browserSessionId = browserSessionId;
+    public String getDeviceOS() {
+        return (String) customData.getOrDefault("device_os", "");
     }
 
-    public boolean isLinkedWithRoblox() {
-        return robloxUsername != null && !robloxUsername.isEmpty();
+    public String getClientVersion() {
+        return (String) customData.getOrDefault("client_version", "");
     }
 
-    public boolean isLinkedWithBrowser() {
-        return browserUsername != null && !browserUsername.isEmpty();
+    public String getLanguage() {
+        return (String) customData.getOrDefault("language", "en_US");
     }
 
-    public String getDisplayName() {
-        if (isBedrockPlayer) {
-            return "!-<" + player.getName() + ">";
-        }
-        return player.getName();
+    public boolean isPremium() {
+        return (boolean) customData.getOrDefault("is_premium", false);
     }
 }

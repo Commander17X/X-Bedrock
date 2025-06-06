@@ -1,11 +1,13 @@
 package com.xbedrock.player;
 
 import com.xbedrock.XBedrockPlugin;
+import com.xbedrock.connection.BedrockConnection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.geysermc.geyser.api.connection.GeyserConnection;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -40,13 +42,20 @@ public class PlayerDataManager implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        loadPlayerData(player);
+        if (!playerData.containsKey(player.getUniqueId())) {
+            PlayerData data = new PlayerData(player);
+            playerData.put(player.getUniqueId(), data);
+            savePlayerData(data);
+        }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        savePlayerData(player);
+        PlayerData data = playerData.get(player.getUniqueId());
+        if (data != null) {
+            savePlayerData(data);
+        }
     }
 
     private void loadPlayerData(Player player) {
@@ -110,12 +119,8 @@ public class PlayerDataManager implements Listener {
         }
     }
 
-    private void savePlayerData(Player player) {
-        PlayerData data = playerData.get(player.getUniqueId());
-        if (data == null)
-            return;
-
-        File playerFile = new File(dataFolder, player.getUniqueId().toString() + ".json");
+    private void savePlayerData(PlayerData data) {
+        File playerFile = new File(dataFolder, data.getUuid().toString() + ".json");
         try (FileWriter writer = new FileWriter(playerFile)) {
             JSONObject json = new JSONObject();
 
@@ -152,24 +157,25 @@ public class PlayerDataManager implements Listener {
 
             writer.write(json.toJSONString());
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to save player data for " + player.getName() + ": " + e.getMessage());
+            plugin.getLogger()
+                    .severe("Failed to save player data for " + data.getPlayer().getName() + ": " + e.getMessage());
         }
     }
 
     public PlayerData getPlayerData(Player player) {
-        return playerData.get(player.getUniqueId());
+        return playerData.computeIfAbsent(player.getUniqueId(), k -> new PlayerData(player));
     }
 
     public void updatePlayerData(Player player, PlayerData data) {
         playerData.put(player.getUniqueId(), data);
-        savePlayerData(player);
+        savePlayerData(data);
     }
 
     public void handleWebstorePurchase(Player player, String itemId) {
         PlayerData data = getPlayerData(player);
         if (data != null) {
             data.addPurchase(itemId, System.currentTimeMillis());
-            savePlayerData(player);
+            savePlayerData(data);
         }
     }
 
@@ -177,7 +183,7 @@ public class PlayerDataManager implements Listener {
         PlayerData data = getPlayerData(player);
         if (data != null) {
             data.removePurchase(itemId);
-            savePlayerData(player);
+            savePlayerData(data);
         }
     }
 
@@ -192,5 +198,29 @@ public class PlayerDataManager implements Listener {
         // - Cosmetics
         // - Player status
         // - etc.
+    }
+
+    public void initializePlayerData(BedrockConnection connection) {
+        UUID uuid = connection.getBedrockUuid();
+        if (!playerData.containsKey(uuid)) {
+            PlayerData data = new PlayerData(uuid);
+            data.setCustomValue("bedrock_username", connection.getBedrockUsername());
+            data.setCustomValue("device_id", connection.getDeviceId());
+            data.setCustomValue("device_model", connection.getDeviceModel());
+            data.setCustomValue("device_os", connection.getDeviceOS());
+            data.setCustomValue("client_version", connection.getClientVersion());
+            data.setCustomValue("language", connection.getLanguage());
+            data.setCustomValue("is_premium", connection.isPremium());
+            playerData.put(uuid, data);
+            savePlayerData(data);
+        }
+    }
+
+    public void savePlayerData(BedrockConnection connection) {
+        UUID uuid = connection.getBedrockUuid();
+        PlayerData data = playerData.get(uuid);
+        if (data != null) {
+            savePlayerData(data);
+        }
     }
 }

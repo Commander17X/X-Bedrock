@@ -2,7 +2,6 @@
 
 [![Minecraft Version](https://img.shields.io/badge/Minecraft-1.21.3-blue.svg)](https://www.minecraft.net)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Discord](https://img.shields.io/discord/your-discord-id?color=7289DA&label=Discord)](https://discord.gg/your-discord)
 
 > 🌟 The Ultimate Cross-Platform Minecraft Experience
 
@@ -20,15 +19,17 @@
 
 ## ✨ Features
 
+> ✨🔧 Techy Sparkle: Now powered by X-Bedrock native Bedrock support and NettyIX anti-packet crasher! ⚡🛡️🌈
+
 ### 🎯 Core Features
-- 🔄 Seamless Bedrock-Java crossplay
+- 🔄 Seamless Bedrock-Java crossplay (Native X-Bedrock implementation)
 - 🎨 Native cosmetics support
 - 💰 Integrated webstore system
 - 🌐 Cross-platform player data
 - 🔒 Secure authentication
 
 ### 🎮 Platform Support
-- 📱 Minecraft: Bedrock Edition
+- 📱 Minecraft: Bedrock Edition (via X-Bedrock, no GeyserMC required)
 - 💻 Minecraft: Java Edition
 - 🎲 Roblox
 - 🌐 Browser-based games
@@ -39,14 +40,17 @@
 - 🎨 RGB color support
 - 📝 Customizable player prefixes
 - 🔒 Secure API integration
+- ⚡ Native Bedrock protocol handler (X-Bedrock)
+- 🛡️ NettyIX anti-packet crasher & advanced security
+- 🚦 Custom connection gate and rate limiting for anti-flood protection
 
 ## 📥 Installation
 
 ### Server Requirements
 - Java 17 or higher
 - Spigot/Paper 1.21.3
-- Geyser-Spigot
 - 2GB+ RAM recommended
+- No GeyserMC required! (Native Bedrock support via X-Bedrock)
 
 ### Installation Steps
 1. 📥 Download the latest release
@@ -226,11 +230,8 @@ xBedrock.on('chat', (message) => {
 ```
 
 ## 🆘 Support
-
-### Getting Help
-- 💬 [Discord Server](https://discord.gg/your-discord)
-- 📧 [Email Support](mailto:support@xbedrock.com)
-- 📝 [Issue Tracker](https://github.com/your-username/X-Bedrock/issues)
+i dont want any discord server but u can dm me anytime please dont be super timeconsuming..
+discord: command19x.
 
 ### Contributing
 1. 🔱 Fork the repository
@@ -243,12 +244,12 @@ xBedrock.on('chat', (message) => {
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🎲 Acknowledgments
 
-- 🎮 GeyserMC for Bedrock support
 - 🎲 Roblox for cross-platform capabilities
+- 🛡️ NettyIX for anti-packet crasher and security
 - 🌐 All contributors and supporters
 
 ---
 
-Made with ❤️ by [Your Name] 
+Made with ❤️ by [command17x] 

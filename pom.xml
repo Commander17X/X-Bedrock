@@ -6,7 +6,7 @@
 
     <groupId>com.xbedrock</groupId>
     <artifactId>X-Bedrock</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.21.3</version>
     <packaging>jar</packaging>
 
     <name>X-Bedrock</name>
